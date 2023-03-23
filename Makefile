@@ -216,8 +216,6 @@ build/ffmpeg-mp4/ffmpeg.o: $(MP4_SHARED_DEPS)
 EMCC_COMMON_ARGS = \
 	-O3 \
 	--closure 1 \
-	--memory-init-file 0 \
-	-s WASM=0 \
 	-s WASM_ASYNC_COMPILATION=0 \
 	-s ASSERTIONS=0 \
 	-s EXIT_RUNTIME=1 \
@@ -241,9 +239,9 @@ ffmpeg-worker-webm.js: $(FFMPEG_WEBM_O) $(PRE_JS) $(POST_JS_WORKER)
 ffmpeg-mp4.js: $(FFMPEG_MP4_O) $(PRE_JS) $(POST_JS_SYNC)
 	emcc $(FFMPEG_MP4_O) $(MP4_SHARED_DEPS) \
 		--post-js $(POST_JS_SYNC) \
-		$(EMCC_COMMON_ARGS) -O2
+		$(EMCC_COMMON_ARGS)
 
 ffmpeg-worker-mp4.js: $(FFMPEG_MP4_O) $(PRE_JS) $(POST_JS_WORKER)
 	emcc $(FFMPEG_MP4_O) $(MP4_SHARED_DEPS) \
 		--post-js $(POST_JS_WORKER) \
-		$(EMCC_COMMON_ARGS) -O2
+		$(EMCC_COMMON_ARGS)
