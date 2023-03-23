@@ -12,7 +12,7 @@ COMMON_DECODERS = vp8 h264 vorbis opus mp3 aac pcm_s16le mjpeg png
 
 WEBM_MUXERS = webm ogg null
 WEBM_ENCODERS = libvpx_vp8 libopus
-FFMPEG_WEBM_BC = build/ffmpeg-webm/ffmpeg.bc
+FFMPEG_WEBM_O = build/ffmpeg-webm/ffmpeg.o
 FFMPEG_WEBM_PC_PATH = ../opus/dist/lib/pkgconfig
 WEBM_SHARED_DEPS = \
 	build/opus/dist/lib/libopus.so \
@@ -20,7 +20,7 @@ WEBM_SHARED_DEPS = \
 
 MP4_MUXERS = mp4 mp3 null
 MP4_ENCODERS = libx264 libmp3lame aac
-FFMPEG_MP4_BC = build/ffmpeg-mp4/ffmpeg.bc
+FFMPEG_MP4_O = build/ffmpeg-mp4/ffmpeg.o
 FFMPEG_MP4_PC_PATH = ../x264/dist/lib/pkgconfig
 MP4_SHARED_DEPS = \
 	build/lame/dist/lib/libmp3lame.so \
@@ -145,6 +145,7 @@ build/x264/dist/lib/libx264.so:
 # - <https://github.com/kripken/emscripten/issues/831>
 # - <https://ffmpeg.org/pipermail/libav-user/2013-February/003698.html>
 FFMPEG_COMMON_ARGS = \
+	--nm=emnm \
 	--cc=emcc \
 	--ranlib=emranlib \
 	--enable-cross-compile \
@@ -185,7 +186,7 @@ FFMPEG_COMMON_ARGS = \
 	--disable-xlib \
 	--enable-zlib
 
-build/ffmpeg-webm/ffmpeg.bc: $(WEBM_SHARED_DEPS)
+build/ffmpeg-webm/ffmpeg.o: $(WEBM_SHARED_DEPS)
 	cd build/ffmpeg-webm && \
 	EM_PKG_CONFIG_PATH=$(FFMPEG_WEBM_PC_PATH) emconfigure ./configure \
 		$(FFMPEG_COMMON_ARGS) \
@@ -194,12 +195,11 @@ build/ffmpeg-webm/ffmpeg.bc: $(WEBM_SHARED_DEPS)
 		--enable-libopus \
 		--enable-libvpx \
 		--extra-cflags="-s USE_ZLIB=1 -I../libvpx/dist/include" \
-		--extra-ldflags="-L../libvpx/dist/lib" \
+		--extra-ldflags="-r -L../libvpx/dist/lib" \
 		&& \
-	emmake make -j && \
-	cp ffmpeg ffmpeg.bc
+	emmake make -j EXESUF=.o
 
-build/ffmpeg-mp4/ffmpeg.bc: $(MP4_SHARED_DEPS)
+build/ffmpeg-mp4/ffmpeg.o: $(MP4_SHARED_DEPS)
 	cd build/ffmpeg-mp4 && \
 	EM_PKG_CONFIG_PATH=$(FFMPEG_MP4_PC_PATH) emconfigure ./configure \
 		$(FFMPEG_COMMON_ARGS) \
@@ -209,10 +209,9 @@ build/ffmpeg-mp4/ffmpeg.bc: $(MP4_SHARED_DEPS)
 		--enable-libmp3lame \
 		--enable-libx264 \
 		--extra-cflags="-s USE_ZLIB=1 -I../lame/dist/include" \
-		--extra-ldflags="-L../lame/dist/lib" \
+		--extra-ldflags="-r -L../lame/dist/lib" \
 		&& \
-	emmake make -j && \
-	cp ffmpeg ffmpeg.bc
+	emmake make -j EXESUF=.o
 
 EMCC_COMMON_ARGS = \
 	-O3 \
@@ -224,27 +223,27 @@ EMCC_COMMON_ARGS = \
 	-s EXIT_RUNTIME=1 \
 	-s NODEJS_CATCH_EXIT=0 \
 	-s NODEJS_CATCH_REJECTION=0 \
-	-s TOTAL_MEMORY=67108864 \
+	-s ALLOW_MEMORY_GROWTH=1 \
 	-lnodefs.js -lworkerfs.js \
 	--pre-js $(PRE_JS) \
 	-o $@
 
-ffmpeg-webm.js: $(FFMPEG_WEBM_BC) $(PRE_JS) $(POST_JS_SYNC)
-	emcc $(FFMPEG_WEBM_BC) $(WEBM_SHARED_DEPS) \
+ffmpeg-webm.js: $(FFMPEG_WEBM_O) $(PRE_JS) $(POST_JS_SYNC)
+	emcc $(FFMPEG_WEBM_O) $(WEBM_SHARED_DEPS) \
 		--post-js $(POST_JS_SYNC) \
 		$(EMCC_COMMON_ARGS)
 
-ffmpeg-worker-webm.js: $(FFMPEG_WEBM_BC) $(PRE_JS) $(POST_JS_WORKER)
-	emcc $(FFMPEG_WEBM_BC) $(WEBM_SHARED_DEPS) \
+ffmpeg-worker-webm.js: $(FFMPEG_WEBM_O) $(PRE_JS) $(POST_JS_WORKER)
+	emcc $(FFMPEG_WEBM_O) $(WEBM_SHARED_DEPS) \
 		--post-js $(POST_JS_WORKER) \
 		$(EMCC_COMMON_ARGS)
 
-ffmpeg-mp4.js: $(FFMPEG_MP4_BC) $(PRE_JS) $(POST_JS_SYNC)
-	emcc $(FFMPEG_MP4_BC) $(MP4_SHARED_DEPS) \
+ffmpeg-mp4.js: $(FFMPEG_MP4_O) $(PRE_JS) $(POST_JS_SYNC)
+	emcc $(FFMPEG_MP4_O) $(MP4_SHARED_DEPS) \
 		--post-js $(POST_JS_SYNC) \
 		$(EMCC_COMMON_ARGS) -O2
 
-ffmpeg-worker-mp4.js: $(FFMPEG_MP4_BC) $(PRE_JS) $(POST_JS_WORKER)
-	emcc $(FFMPEG_MP4_BC) $(MP4_SHARED_DEPS) \
+ffmpeg-worker-mp4.js: $(FFMPEG_MP4_O) $(PRE_JS) $(POST_JS_WORKER)
+	emcc $(FFMPEG_MP4_O) $(MP4_SHARED_DEPS) \
 		--post-js $(POST_JS_WORKER) \
 		$(EMCC_COMMON_ARGS) -O2
