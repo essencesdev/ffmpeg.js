@@ -8,6 +8,7 @@ POST_JS_WORKER = build/post-worker.js
 
 COMMON_FILTERS = aresample scale crop overlay hstack vstack setpts atempo
 COMMON_DEMUXERS = matroska ogg mov mp3 wav image2 concat
+COMMON_MUXERS = image2
 COMMON_DECODERS = vp8 h264 vorbis opus mp3 aac pcm_s16le mjpeg png
 COMMON_ENCODERS = png
 
@@ -176,6 +177,7 @@ FFMPEG_COMMON_ARGS = \
 	--disable-vdpau \
 	$(addprefix --enable-decoder=,$(COMMON_DECODERS)) \
 	$(addprefix --enable-encoder=,$(COMMON_ENCODERS)) \
+	$(addprefix --enable-muxer=,$(COMMON_MUXERS)) \
 	$(addprefix --enable-demuxer=,$(COMMON_DEMUXERS)) \
 	--enable-protocol=file \
 	$(addprefix --enable-filter=,$(COMMON_FILTERS)) \
